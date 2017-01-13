@@ -46,20 +46,20 @@ SECTIONS
 	}
 
 	. = ALIGN(4);
-	.rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
+	.rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }//指定.rodata段(只读数据段)由所有输入文件的.rodata段组成
 
 	. = ALIGN(4);
-	.data : { *(.data) }
+	.data : { *(.data) }//指定.data段读写数据段，由所有输入文件的.rodata段组成
 
 	. = ALIGN(4);
-	.got : { *(.got) }
+	.got : { *(.got) }//.got段由所有输入文件的.got段组成，got段是uboot自定义的一个段，非标准段
 
-	__u_boot_cmd_start = .;
-	.u_boot_cmd : { *(.u_boot_cmd) }
-	__u_boot_cmd_end = .;
+	__u_boot_cmd_start = .;//_u_boot_cmd_start的值被设置为了当前地址
+	.u_boot_cmd : { *(.u_boot_cmd) }//.uboot_cmd段由所有文件的.u_boot_cmd组成
+	__u_boot_cmd_end = .;//_u_boot_cmd_end变量的值被赋值为了当前地址
 
-	. = ALIGN(4);
-	__bss_start = .;
-	.bss : { *(.bss) }
-	_end = .;
+	. = ALIGN(4);//定位器当前地址，4字节对齐
+	__bss_start = .;//把_bss_start赋值为当前地址，即bss段的开始位置
+	.bss : { *(.bss) }//.bss段由所有输入文件的.bss段组成
+	_end = .;//把_end赋值为当前位置，即bss段的结束位置
 }
