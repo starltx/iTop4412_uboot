@@ -24,17 +24,21 @@
  * MA 02111-1307 USA
  */
 
+//输出可执行文件是elf格式，32位ARM指令，小端
 OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
+//输出可执行文件的运行环境是arm平台
 OUTPUT_ARCH(arm)
+//指定输出可执行文件的起始代码段为_start(在start.S中定义)
 ENTRY(_start)
 SECTIONS
 {
-	. = 0x00000000;
+	. = 0x00000000;//将当前地址定位到ox00000000处，操作符用来表示当前地址
 
-	. = ALIGN(4);
-	.text	:
+	. = ALIGN(4);//代码以四字节对齐
+	.text	://定义.text段
 	{
-		cpu/arm_cortexa9/start.o		(.text)
+	//段由start.o cpu_init.o等中的.text段所有段组成
+		cpu/arm_cortexa9/start.o		(.text)//代码的第一个代码部分
 		cpu/arm_cortexa9/s5pc210/cpu_init.o	(.text)
 		board/samsung/smdkc210/lowlevel_init.o	(.text)
 		common/ace_sha1.o (.text)
