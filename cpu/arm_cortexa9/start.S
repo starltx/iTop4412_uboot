@@ -50,22 +50,26 @@
  *
  *************************************************************************
  */
+ //BL1 8K空间
 	.word 0x2000
 	.word 0x0
 	.word 0x0
 	.word 0x0
+//globl为关键字，申明_start变量
 .globl _start
+//标号label,b reset就是跳转到对应的标号reset的位置
 _start: b	reset
-	ldr	pc, _undefined_instruction
-	ldr	pc, _software_interrupt
-	ldr	pc, _prefetch_abort
-	ldr	pc, _data_abort
-	ldr	pc, _not_used
-	ldr	pc, _irq
-	ldr	pc, _fiq
-
+	ldr	pc, _undefined_instruction //未定义指令，将存储器地址为_undefined_instruction数据读入寄存pc中
+	ldr	pc, _software_interrupt   //软中断
+	ldr	pc, _prefetch_abort       //预取指错误
+	ldr	pc, _data_abort           //数据错误
+	ldr	pc, _not_used             //未定义
+	ldr	pc, _irq                  //普通中断
+	ldr	pc, _fiq                  //快速中断
+//ldr pc,_software_interrupt 表示，将地址为_software_interrupt中内容载入到pc，正好装的是标号undefined_instruction
+//故代码意思是跳转到标号undefined_instruction的位置，执行对应的代码
 _undefined_instruction:
-	.word undefined_instruction
+	.word undefined_instruction  //分配存放undefined_instruction的4字节空间，_undefined_instruction = &undefined_instruction
 _software_interrupt:
 	.word software_interrupt
 _prefetch_abort:
@@ -79,11 +83,11 @@ _irq:
 _fiq:
 	.word fiq
 _pad:
-	.word 0x12345678 /* now 16*4=64 */
+	.word 0x12345678 /* now 16*4=64 */ //分配4字节地址空间，存放0x12345678
 .global _end_vect
 _end_vect:
 
-	.balignl 16,0xdeadbeef
+	.balignl 16,0xdeadbeef    //代码需要16字节对齐，不足之处，用0xdeadbeef填充
 /*
  *************************************************************************
  *
@@ -98,7 +102,7 @@ _end_vect:
  */
 
 _TEXT_BASE:
-	.word	TEXT_BASE
+	.word	TEXT_BASE  //分配4字节地址空间，存放代码基地址
 
 /*
  * Below variable is very important because we use MMU in U-Boot.
@@ -106,16 +110,16 @@ _TEXT_BASE:
  * by scsuh.
  */
 _TEXT_PHY_BASE:
-	.word	CFG_PHY_UBOOT_BASE
+	.word	CFG_PHY_UBOOT_BASE  //
 
 .globl _armboot_start
 _armboot_start: 
-	.word _start
+	.word _start       //
 
 /*
  * These are defined in the board-specific linker script.
  */
-.globl _bss_start
+.globl _bss_start  //定义_bss_start和_bss_end两个globl全局变量，u-boot中会调用
 _bss_start:
 	.word __bss_start
 
@@ -165,7 +169,7 @@ skip_inval:
 finished_inval:
     .endm
 
-#if defined(CONFIG_USE_IRQ)
+#if defined(CONFIG_USE_IRQ) //只有定义了CONFIG_USE_IRQ的时候，才用到这两个变量，只有用到了中断IRQ，才会用到中断的堆栈，才会有中断堆栈的起始位置
 /* IRQ stack memory (calculated at run-time) */
 .globl IRQ_STACK_START
 IRQ_STACK_START:
@@ -186,10 +190,21 @@ reset:
 	/*
 	 * set the cpu to SVC32 mode and IRQ & FIQ disable
 	 */
-	mrs	r0, cpsr
-	bic	r0, r0, #0x3f
-	orr	r0, r0, #0xd3
-	msr	cpsr, r0
+	//将cpsr状态寄存器读取(通过读cpsr可以获得当前处理器的工作状态current program status register)，保存到r0中
+	//对CPSR或SPSR(保存的程序寄存器saved program status register)寄存器的读-修改-写操作，可以切换处理器模式，或者允许/禁止IRQ/FIQ中断
+	mrs	r0, cpsr 
+	bic	r0, r0, #0x3f //清掉r0中的低7位
+	orr	r0, r0, #0xd3 //orr用于两个操作数进行逻辑或运算
+	msr	cpsr, r0      //传送r0的内容到CPSR
+// CPSR位域 7		6		5		4		3		2		1		0
+//位域      I		F				M4		M3		M2		M1		M0
+//0xd3		1		1		0		1		0		0		1		1
+//对应含义	关中断IRQ  关闭FIQ		设置CPU为SVC模式
+//msr 程序状态寄存器_域，操作数
+//[31:24] 条件标志位域，用f表示
+//[23:16] 状态位域，用s表示
+//[15:8]扩展位域，用x表示
+//[7:0]为控制位域，用c表示
 #else//*****ly
 	mrs	r0, cpsr
 	bic	r0, r0, #0x1f
@@ -290,6 +305,7 @@ cache_init:
 	 * Go setup Memory and board specific bits prior to relocation.
 	 */
 	//b     .
+	//bl，带分支跳转，等要做完的事情执行完毕后，使得CPU跳转回来
 	bl	lowlevel_init	/* go setup pll,mux,memory */
 
 
@@ -299,6 +315,7 @@ cache_init:
 
 
 	/* get ready to call C functions */
+	//把_TEXT_PHY_BASE的内存中的内容给sp
 	ldr	sp, _TEXT_PHY_BASE	/* setup temp stack pointer */
 	sub	sp, sp, #12
 	mov	fp, #0			/* no previous frame, so fp=0 */
@@ -498,12 +515,12 @@ clear_bss:
 	mov 	r2, #0x00000000		/* clear                            */
 
 clbss_l:
-	str	r2, [r0]		/* clear loop...                    */
+	str	r2, [r0]		/* clear loop...str用于从源寄存器中将一个32位的字数据送到存储器*/
 	add	r0, r0, #4
-	cmp	r0, r1
-	ble	clbss_l
+	cmp	r0, r1    //比较r0地址和r1地址，即比较当前地址是否到了bss段结束位置
+	ble	clbss_l  //如果小于或等于litte or equal,那么就调到clbss_1,循环，直到地址超过了bss的_end位置，即实现了整个bss段清零
 	
-	ldr	pc, _start_armboot
+	ldr	pc, _start_armboot  //调用C语言board.c中的start_armboot
 
 _start_armboot:
 	.word start_armboot
