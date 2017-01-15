@@ -232,12 +232,18 @@ cache_init:
 	/*
 	 * disable MMU stuff and caches
 	 */
+	 //mrc reg, rd, CRn, CRm, opcode_2
+	 //此处rd为0，CRn为c1，CRm为c0,操作opcode_2为0
+	 //向bit[CRm]中写入opcode_2，即向bit[0]中写入0
+	 //将r0的值写入cp15寄存器中
 	mrc	p15, 0, r0, c1, c0, 0
+	//
 	bic	r0, r0, #0x00002000	@ clear bits 13 (--V-)
 	bic	r0, r0, #0x00000007	@ clear bits 2:0 (-CAM)
 	orr	r0, r0, #0x00001000	@ set bit 12 (---I) Icache
 	orr	r0, r0, #0x00000002	@ set bit 1  (--A-) Align
 	orr	r0, r0, #0x00000800	@ set bit 11 (Z---) BTB
+	//将刚才计算得到的r0的至写入cp15寄存器中
 	mcr	p15, 0, r0, c1, c0, 0
 #endif
 	
@@ -253,6 +259,7 @@ cache_init:
 
 
 	/* Read booting information */
+	//获取OM引脚状态，决定从哪里启动
         ldr	r0, =POWER_BASE
         ldr	r1, [r0,#OMR_OFFSET]
         bic	r2, r1, #0xffffffc1
