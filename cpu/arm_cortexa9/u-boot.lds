@@ -39,7 +39,7 @@ SECTIONS
 	. = ALIGN(4);
 	/*定义.text段*/
 	/*段由start.o cpu_init.o等中的.text段所有段组成*/
-	/*代码的第一个代码部分
+	/*代码的第一个代码部分*/
 	.text	:
 	{
 		cpu/arm_cortexa9/start.o		(.text)
